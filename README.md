@@ -19,3 +19,15 @@ Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_do
 and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/csv_test](https://hexdocs.pm/csv_test).
 
+## Instruction
+
+*Run the source code*
+```
+cd csv-test
+iex -S mix                                  //to compile ans start Elixir CLI
+SalesTaxes.read_orders("lib/input.csv")     //to import the CSV file
+
+*How to test
+```
+mix test
+```
