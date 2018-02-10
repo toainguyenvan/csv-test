@@ -6,27 +6,62 @@ defmodule SalesTaxes do
     File.close(file)
 
     orders
-    |> _calculate_order
+    |> calculate_orders
   end
 
-  defp _calculate_order(orders) do
+  def calculate_orders(orders) do
+    IO.puts "## OUTPUT:\nQuantity, Product, Price"
     Enum.each(orders, fn row -> 
-      # tax = if (row[:Product] === "book" || row[:Product] === "food" || row[:Product] === "medical"), do: 0.1, else: 0
-      # IO.inspect tax
-      tax = _get_product_type(row[:Product])
-      # IO.puts "Quantity, Product, Price"
-      price = row[:Price]*(1 + tax)
-      # actual_price = Float.round(Float.floor(price, 3), 2)
-
-      # Rounding as the rule (rounded up nearest 0.05)
-      actual_price = Float.round(price, 2)
-
-      # Get the second decimal number
-      second_decimal = rem(round(actual_price*100), 10)
-
-      rounded_price = if (second_decimal >= 5 || second_decimal == 0), do: actual_price, else: _rounding_result(actual_price)
-      IO.puts("1, #{row[:Product]}, #{Float.round(rounded_price, 2)}")
+      row
+      |> calculate
+      |> _display
     end)
+
+    # Display the Total Sale and Taxes
+    _sale_summary(orders)
+  end
+
+  def calculate(order) do
+    tax = _get_product_type(order[:Product])
+    price = order[:Price]*(1 + tax)
+
+    # Rounding as the rule (rounded up nearest 0.05)
+    actual_price = Float.round(price, 2)
+
+    # Get the second decimal number
+    second_decimal = rem(round(actual_price*100), 10)
+
+    rounded_price = if (second_decimal >= 5 || second_decimal == 0), do: actual_price, else: _rounding_result(actual_price)
+    rounded_price = Float.round(rounded_price, 2)
+
+    # Caculate the sale tax and order price
+    order_taxes = Float.round((rounded_price - order[:Price]), 2)*order[:Quantity]
+    order_price = order[:Quantity]*rounded_price
+
+    map = %{sale_record: [Quantity: order[:Quantity], Product: order[:Product], Price: rounded_price], order_taxes: order_taxes, order_price: order_price}
+  end
+
+  defp _display(map) do
+    map
+    IO.puts ("#{map.sale_record[:Quantity]}, #{map.sale_record[:Product]}, #{map.sale_record[:Price]}")
+    # IO.puts ("#{map.order_taxes}\n#{map.order_price}")
+  end
+
+  defp _sale_summary(orders)  do
+    orders
+    |> Enum.map(&(calculate(&1)))
+    |> Enum.map(fn order -> %{
+      price: order.order_price,
+      sale_taxes: order.order_taxes
+    } end)
+
+    # Calculate the Total Sale, Total Taxes
+    |> Enum.reduce(%{price: 0, tax: 0}, fn %{price: p, sale_taxes: s}, %{price: sum_price, tax: sum_sale_taxes} -> %{price: p + sum_price, tax: s + sum_sale_taxes} end)
+    |> _show_summary
+  end
+
+  defp _show_summary(result) do
+    IO.puts "SALES TAXES: #{result.tax}\nTOTAL: #{result.price}"
   end
 
   defp _rounding_result(price) do
@@ -67,7 +102,7 @@ defmodule SalesTaxes do
   defp _get_parts(line) do
     line
       |> String.strip
-      |> String.split(",")
+      |> String.split(", ")
   end
 
 end
